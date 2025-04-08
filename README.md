@@ -7,5 +7,7 @@ simple temporary file sharing website that gives users 5mb of space per bin!
 # how to run
 - git clone https://github.com/smplstuff/smplbin.git
 - cd smplbin
-- ```python
-  python app.py
+- pip install -r requirements.txt
+- python app.py
+
+app will run on port 5000 by default!
