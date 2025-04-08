@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="bg-gray-800 border border-gray-700 rounded p-5">
+    <h2 class="text-xl font-medium mb-4">api documentation</h2>
+    
+    <div class="mb-6">
+        <p class="text-sm mb-4">smplbin provides a simple rest api for accessing and managing file bins.</p>
+        
+        <div class="space-y-6">
+            
+            <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-2 text-blue-400">Get File Info</h3>
+                <div class="bg-blue-900/30 border border-blue-800/50 p-3 rounded text-sm font-mono mb-2 text-blue-200">GET /api/v1/bins/{file_id}</div>
+                <p class="text-sm">Returns information about a specific file bin.</p>
+                <h4 class="text-sm font-medium mt-2 text-gray-400">Response Example:</h4>
+                <pre class="bg-gray-900 border border-gray-800 p-3 rounded text-sm font-mono mt-1 overflow-auto text-gray-100">
+{
+  "file_id": "abc123",
+  "filenames": ["document.pdf", "image.jpg"],
+  "upload_date": "2023-05-15T14:32:10",
+  "expiry_date": "2023-05-18T14:32:10",
+  "is_empty": false
+}
+                </pre>
+            </div>
+            
+            <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-2 text-yellow-400">Create New Bin</h3>
+                <div class="bg-yellow-900/30 border border-yellow-800/50 p-3 rounded text-sm font-mono mb-2 text-yellow-200">POST /api/v1/bins</div>
+                <p class="text-sm">Creates a new file bin. Multipart/form-data with file fields should be included. Maximum total bin size is 5MB.</p>
+                <h4 class="text-sm font-medium mt-2 text-gray-400">Response Example:</h4>
+                <pre class="bg-gray-900 border border-gray-800 p-3 rounded text-sm font-mono mt-1 overflow-auto text-gray-100">
+{
+  "success": true,
+  "file_id": "ghi789",
+  "message": "Bin created successfully"
+}
+                </pre>
+            </div>
+            
+            <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-2 text-yellow-400">Add File to Bin</h3>
+                <div class="bg-yellow-900/30 border border-yellow-800/50 p-3 rounded text-sm font-mono mb-2 text-yellow-200">POST /api/v1/bins/{file_id}</div>
+                <p class="text-sm">Adds a new file to an existing bin. Multipart/form-data with file field should be included. Total bin size cannot exceed 5MB.</p>
+                <h4 class="text-sm font-medium mt-2 text-gray-400">Response Example:</h4>
+                <pre class="bg-gray-900 border border-gray-800 p-3 rounded text-sm font-mono mt-1 overflow-auto text-gray-100">
+{
+  "success": true,
+  "file_id": "abc123",
+  "filename": "newfile.txt",
+  "message": "File added successfully"
+}
+                </pre>
+            </div>
+            
+            <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-2 text-red-400">Delete Bin</h3>
+                <div class="bg-red-900/30 border border-red-800/50 p-3 rounded text-sm font-mono mb-2 text-red-200">DELETE /api/v1/bins/{file_id}</div>
+                <p class="text-sm">Deletes an entire file bin and all its files.</p>
+                <h4 class="text-sm font-medium mt-2 text-gray-400">Response Example:</h4>
+                <pre class="bg-gray-900 border border-gray-800 p-3 rounded text-sm font-mono mt-1 overflow-auto text-gray-100">
+{
+  "success": true,
+  "message": "Bin deleted successfully"
+}
+                </pre>
+            </div>
+            
+            <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-2 text-red-400">Delete File</h3>
+                <div class="bg-red-900/30 border border-red-800/50 p-3 rounded text-sm font-mono mb-2 text-red-200">DELETE /api/v1/bins/{file_id}/files/{filename}</div>
+                <p class="text-sm">Deletes a specific file from a bin.</p>
+                <h4 class="text-sm font-medium mt-2 text-gray-400">Response Example:</h4>
+                <pre class="bg-gray-900 border border-gray-800 p-3 rounded text-sm font-mono mt-1 overflow-auto text-gray-100">
+{
+  "success": true,
+  "message": "File deleted successfully",
+  "is_empty": false
+}
+                </pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

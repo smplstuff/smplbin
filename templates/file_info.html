@@ -1,0 +1,345 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="bg-gray-800 border border-gray-700 rounded p-6">
+    <h2 class="text-2xl font-medium mb-5">files uploaded</h2>
+    
+    <div class="mb-8">
+        <p class="text-gray-400 mb-3 text-base">share this link:</p>
+        <div class="flex">
+            <input type="text" value="{{ request.url }}" id="share-link" 
+                   class="flex-grow bg-gray-700 border border-gray-600 rounded-l px-4 py-2 focus:outline-none focus:ring-1 focus:ring-gray-500 text-base" readonly>
+            <button onclick="copyToClipboard()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-r text-base">
+                copy
+            </button>
+        </div>
+    </div>
+    
+    <div class="mb-8">
+        <h3 class="text-xl font-medium mb-3">add files:</h3>
+        <form id="add-file-form" action="{{ url_for('add_file', file_id=file_id) }}" method="post" enctype="multipart/form-data" class="mb-2">
+            <div id="add-drop-zone" class="drop-zone mb-4">
+                <p class="mb-3 text-base">drop files here or click to select</p>
+                <input type="file" id="add-file-input" name="file" multiple class="hidden">
+                <button type="button" id="add-select-button" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-base">
+                    select files
+                </button>
+            </div>
+            <div id="add-file-list" class="mt-4 space-y-3 hidden">
+                <h3 class="font-medium text-base">selected files:</h3>
+                <ul id="add-selected-files" class="list-disc pl-6 text-base"></ul>
+                <div id="add-total-size" class="text-sm mt-2">total size: <span id="add-size-value">0 bytes</span> (remaining: <span id="remaining-size">calculating...</span>)</div>
+                <button type="submit" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-base">
+                    upload
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="mb-8">
+        <h3 class="text-xl font-medium mb-3">files:</h3>
+        {% if is_empty %}
+        <div class="bg-red-900/50 text-red-200 p-5 rounded border border-red-800">
+            <p class="font-medium text-base">this bin is empty!</p>
+            <p class="text-base mt-2">all files have been deleted from this bin.</p>
+        </div>
+        {% else %}
+        <ul class="space-y-4">
+            {% for filename in files %}
+            <li class="border border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-gray-700 p-3 flex items-center justify-between">
+                    <span class="truncate font-medium">{{ filename }}</span>
+                    <div class="flex space-x-3">
+                        <button onclick="showPreview('{{ filename }}')" class="text-blue-400 hover:text-blue-300">
+                            preview
+                        </button>
+                        <a href="{{ url_for('download_file', file_id=file_id, filename=filename) }}" 
+                           class="text-blue-400 hover:text-blue-300" download>
+                            download
+                        </a>
+                        <button onclick="deleteFile('{{ file_id }}', '{{ filename }}')" 
+                                class="text-red-400 hover:text-red-300">
+                            delete
+                        </button>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    
+    <div class="text-sm text-gray-500">
+        <p>uploaded: {{ upload_date.strftime('%Y-%m-%d %H:%M') }}</p>
+        <p>expires: {{ expiry_date.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+    
+    <div class="mt-8 pt-5 border-t border-gray-700">
+        <button onclick="deleteBin('{{ file_id }}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-base">
+            delete entire bin
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copyToClipboard() {
+        const shareLink = document.getElementById('share-link');
+        shareLink.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const button = shareLink.nextElementSibling;
+        const originalText = button.textContent;
+        button.textContent = 'copied';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+    }
+    
+    function deleteFile(fileId, filename) {
+        if (confirm(`Are you sure you want to delete ${filename}?`)) {
+            fetch(`/delete_file/${fileId}/${filename}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error deleting file');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting file');
+            });
+        }
+    }
+    
+    function deleteBin(fileId) {
+        if (confirm('Are you sure you want to delete the entire bin? This cannot be undone.')) {
+            fetch(`/delete_bin/${fileId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    alert('Error deleting bin');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting bin');
+            });
+        }
+    }
+    
+    function showPreview(filename) {
+        const fileUrl = '{{ url_for("download_file", file_id=file_id, filename="") }}' + filename;
+        const fileExtension = filename.split('.').pop().toLowerCase();
+        
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4';
+        modal.id = 'preview-modal';
+        
+        // Create close button
+        const closeButton = document.createElement('button');
+        closeButton.className = 'absolute top-4 right-4 text-white bg-gray-800 hover:bg-gray-700 rounded-full p-2';
+        closeButton.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+        closeButton.onclick = function() {
+            document.body.removeChild(modal);
+        };
+        
+        // Create content container
+        const content = document.createElement('div');
+        content.className = 'bg-gray-800 rounded-lg p-4 max-w-4xl w-full max-h-[90vh] overflow-auto relative';
+        
+        // Add file name header
+        const header = document.createElement('h3');
+        header.className = 'text-xl font-medium mb-4 pr-10';
+        header.textContent = filename;
+        content.appendChild(header);
+        
+        // Image preview
+        if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(fileExtension)) {
+            const img = document.createElement('img');
+            img.src = fileUrl;
+            img.alt = filename;
+            img.className = 'max-w-full max-h-[70vh] mx-auto';
+            content.appendChild(img);
+        }
+        // Video preview
+        else if (['mp4', 'webm', 'ogg'].includes(fileExtension)) {
+            const video = document.createElement('video');
+            video.controls = true;
+            video.className = 'max-w-full max-h-[70vh] mx-auto';
+            const source = document.createElement('source');
+            source.src = fileUrl;
+            source.type = `video/${fileExtension === 'mp4' ? 'mp4' : fileExtension === 'webm' ? 'webm' : 'ogg'}`;
+            video.appendChild(source);
+            content.appendChild(video);
+        }
+        // Text preview
+        else if (['txt', 'md', 'html', 'css', 'js', 'json', 'xml', 'py', 'java', 'c', 'cpp', 'h', 'rb', 'php'].includes(fileExtension)) {
+            const preContainer = document.createElement('div');
+            preContainer.className = 'bg-gray-900 p-3 rounded overflow-auto max-h-[70vh]';
+            const pre = document.createElement('pre');
+            pre.className = 'whitespace-pre-wrap break-words text-sm';
+            pre.textContent = 'Loading...';
+            preContainer.appendChild(pre);
+            content.appendChild(preContainer);
+            
+            fetch(fileUrl)
+                .then(response => response.text())
+                .then(text => {
+                    pre.textContent = text;
+                })
+                .catch(error => {
+                    pre.textContent = `Error loading preview: ${error.message}`;
+                });
+        }
+        // PDF preview
+        else if (fileExtension === 'pdf') {
+            const pdfContainer = document.createElement('div');
+            pdfContainer.className = 'text-center';
+            pdfContainer.innerHTML = `
+                <p class="mb-2">PDF preview is not available directly.</p>
+                <a href="${fileUrl}" target="_blank" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
+                    Open PDF in new tab
+                </a>
+            `;
+            content.appendChild(pdfContainer);
+        }
+        // Other files
+        else {
+            const noPreview = document.createElement('div');
+            noPreview.className = 'text-center text-gray-500';
+            noPreview.textContent = 'Preview not available for this file type.';
+            content.appendChild(noPreview);
+        }
+        
+        // Add elements to modal
+        modal.appendChild(content);
+        modal.appendChild(closeButton);
+        
+        // Add modal to body
+        document.body.appendChild(modal);
+        
+        // Close on Escape key
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                document.body.removeChild(modal);
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+        
+        // Close on click outside content
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const addDropZone = document.getElementById('add-drop-zone');
+        const addFileInput = document.getElementById('add-file-input');
+        const addSelectButton = document.getElementById('add-select-button');
+        const addFileList = document.getElementById('add-file-list');
+        const addSelectedFiles = document.getElementById('add-selected-files');
+        const addSizeDisplay = document.getElementById('add-size-value');
+        const remainingSizeDisplay = document.getElementById('remaining-size');
+        let addTotalSize = 0;
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        let currentBinSize = {{ current_bin_size|default(0) }};
+        
+        // Calculate and display remaining space
+        function updateRemainingSpace() {
+            const remainingSpace = maxSize - currentBinSize;
+            remainingSizeDisplay.textContent = formatFileSize(remainingSpace);
+        }
+        
+        updateRemainingSpace();
+        
+        // Handle click on select button
+        if(addSelectButton) {
+            addSelectButton.addEventListener('click', function() {
+                addFileInput.click();
+            });
+            
+            // Handle file selection
+            addFileInput.addEventListener('change', function() {
+                updateAddFileList(this.files);
+            });
+            
+            // Handle drag and drop
+            addDropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                addDropZone.classList.add('active');
+            });
+            
+            addDropZone.addEventListener('dragleave', function() {
+                addDropZone.classList.remove('active');
+            });
+            
+            addDropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                addDropZone.classList.remove('active');
+                
+                const files = e.dataTransfer.files;
+                addFileInput.files = files;
+                updateAddFileList(files);
+            });
+        }
+        
+        function updateAddFileList(files) {
+            if (files.length > 0) {
+                addSelectedFiles.innerHTML = '';
+                addTotalSize = 0;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileSize = formatFileSize(file.size);
+                    addTotalSize += file.size;
+                    
+                    const li = document.createElement('li');
+                    li.textContent = `${file.name} (${fileSize})`;
+                    
+                    // Check if total size exceeds limit
+                    if (addTotalSize + currentBinSize > maxSize) {
+                        li.classList.add('text-red-500');
+                    }
+                    
+                    addSelectedFiles.appendChild(li);
+                }
+                
+                addSizeDisplay.textContent = formatFileSize(addTotalSize);
+                if (addTotalSize + currentBinSize > maxSize) {
+                    addSizeDisplay.classList.add('text-red-500');
+                    addSizeDisplay.textContent += ' - exceeds remaining space';
+                } else {
+                    addSizeDisplay.classList.remove('text-red-500');
+                }
+                
+                addFileList.classList.remove('hidden');
+            } else {
+                addFileList.classList.add('hidden');
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) {
+                return bytes + ' bytes';
+            } else if (bytes < 1024 * 1024) {
+                return (bytes / 1024).toFixed(1) + ' kb';
+            } else {
+                return (bytes / (1024 * 1024)).toFixed(1) + ' mb';
+            }
+        }
+    });
+</script>
+{% endblock %}

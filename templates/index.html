@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex items-start">
+        <div class="flex-shrink-0 bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center mr-4 text-sm">1</div>
+        <div class="w-full">
+            <form id="upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="mb-2">
+                <div id="drop-zone" class="drop-zone mb-4">
+                    <p class="mb-3 text-base">drop files here or click to select</p>
+                    <input type="file" id="file-input" name="file" multiple class="hidden">
+                    <button type="button" id="select-button" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-base">
+                        select files
+                    </button>
+                </div>
+                <div id="file-list" class="mt-4 space-y-3 hidden">
+                    <h3 class="font-medium text-base">selected files:</h3>
+                    <ul id="selected-files" class="list-disc pl-6 text-base"></ul>
+                    <div id="total-size" class="text-sm mt-2">Total size: <span id="size-value">0 bytes</span> (max: 5MB)</div>
+                    <button type="submit" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-base">
+                        upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="flex items-start">
+        <div class="flex-shrink-0 bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center mr-4 text-sm">2</div>
+        <p class="text-base">wait for upload to complete.</p>
+    </div>
+    
+    <div class="flex items-start">
+        <div class="flex-shrink-0 bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center mr-4 text-sm">3</div>
+        <p class="text-base">share the generated link.</p>
+    </div>
+    
+    <div class="mt-8 text-sm text-gray-500">
+        files are automatically deleted after 3 days.
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const selectButton = document.getElementById('select-button');
+        const fileList = document.getElementById('file-list');
+        const selectedFiles = document.getElementById('selected-files');
+        const totalSizeDisplay = document.getElementById('size-value');
+        let totalSize = 0;
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        
+        // Handle click on select button
+        selectButton.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        // Handle file selection
+        fileInput.addEventListener('change', function() {
+            updateFileList(this.files);
+        });
+        
+        // Handle drag and drop
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.classList.add('active');
+        });
+        
+        dropZone.addEventListener('dragleave', function() {
+            dropZone.classList.remove('active');
+        });
+        
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('active');
+            
+            const files = e.dataTransfer.files;
+            fileInput.files = files;
+            updateFileList(files);
+        });
+        
+        function updateFileList(files) {
+            if (files.length > 0) {
+                selectedFiles.innerHTML = '';
+                totalSize = 0;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileSize = formatFileSize(file.size);
+                    totalSize += file.size;
+                    
+                    const li = document.createElement('li');
+                    li.textContent = `${file.name} (${fileSize})`;
+                    
+                    // Check if total size exceeds limit
+                    if (totalSize > maxSize) {
+                        li.classList.add('text-red-500');
+                    }
+                    
+                    selectedFiles.appendChild(li);
+                }
+                
+                totalSizeDisplay.textContent = formatFileSize(totalSize);
+                if (totalSize > maxSize) {
+                    totalSizeDisplay.classList.add('text-red-500');
+                    totalSizeDisplay.textContent += ' - exceeds 5MB limit';
+                } else {
+                    totalSizeDisplay.classList.remove('text-red-500');
+                }
+                
+                fileList.classList.remove('hidden');
+            } else {
+                fileList.classList.add('hidden');
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) {
+                return bytes + ' bytes';
+            } else if (bytes < 1024 * 1024) {
+                return (bytes / 1024).toFixed(1) + ' kb';
+            } else {
+                return (bytes / (1024 * 1024)).toFixed(1) + ' mb';
+            }
+        }
+    });
+</script>
+{% endblock %}

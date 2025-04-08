@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="bg-gray-800 border border-gray-700 rounded p-6">
+    <h2 class="text-2xl font-medium mb-5">about smplbin</h2>
+    
+    <div class="space-y-5 text-base">
+        <p>
+            smplbin is a simple, no-frills file sharing service designed for quick and easy file transfers.
+        </p>
+        
+        <p>
+            our philosophy is simplicity: no registration required, no tracking, and a straightforward user experience.
+            just upload, share, and go.
+        </p>
+        
+        <h3 class="text-xl font-medium mt-8 mb-3">key features</h3>
+        <ul class="list-disc pl-6 space-y-2">
+            <li>upload up to 5MB per file</li>
+            <li>share multiple files at once</li>
+            <li>files automatically expire after 3 days</li>
+            <li>no account needed</li>
+            <li>simple rest api available</li>
+        </ul>
+        
+        <p class="mt-8">
+            smplbin was created in 2025 as a lightweight alternative to complex file sharing services.
+        </p>
+    </div>
+</div>
+{% endblock %}
