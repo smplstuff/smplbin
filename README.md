@@ -8,4 +8,4 @@ simple temporary file sharing website that gives users 5mb of space per bin!
 - git clone https://github.com/smplstuff/smplbin.git
 - cd smplbin
 - ```python
-  python app.py```
+  python app.py
